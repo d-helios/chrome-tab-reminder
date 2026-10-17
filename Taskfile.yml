@@ -1,0 +1,38 @@
+version: '3'
+
+vars:
+  NAME: tab-reminder
+  DIST: dist
+  VERSION:
+    sh: >-
+      sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' manifest.json
+  FILES: manifest.json background.js popup.html popup.js parse.js icons
+
+tasks:
+  default:
+    desc: List available tasks
+    silent: true
+    cmds:
+      - task --list
+
+  build:
+    desc: Build the Chrome Web Store upload archive
+    run: once
+    cmds:
+      - mkdir -p {{.DIST}}
+      - rm -f {{.DIST}}/{{.NAME}}-v{{.VERSION}}.zip
+      - zip -r -X -q {{.DIST}}/{{.NAME}}-v{{.VERSION}}.zip {{.FILES}} -x '*.DS_Store'
+      - echo "Built {{.DIST}}/{{.NAME}}-v{{.VERSION}}.zip"
+      - unzip -l {{.DIST}}/{{.NAME}}-v{{.VERSION}}.zip
+
+  verify:
+    desc: Verify manifest.json sits at the archive root
+    deps: [build]
+    cmds:
+      - unzip -Z1 {{.DIST}}/{{.NAME}}-v{{.VERSION}}.zip | grep -qx manifest.json
+      - echo "Archive layout OK"
+
+  clean:
+    desc: Remove the artifacts folder
+    cmds:
+      - rm -rf {{.DIST}}

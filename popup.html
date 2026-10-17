@@ -1,34 +1,289 @@
 <!doctype html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
 <style>
-  body { width: 320px; font: 13px system-ui, sans-serif; margin: 12px; }
-  h4 { margin: 12px 0 6px; }
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 72.2% 50.6%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    --radius: 0.5rem;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: 240 10% 3.9%;
+      --foreground: 0 0% 98%;
+      --popover: 240 10% 3.9%;
+      --popover-foreground: 0 0% 98%;
+      --primary: 0 0% 98%;
+      --primary-foreground: 240 5.9% 10%;
+      --secondary: 240 3.7% 15.9%;
+      --secondary-foreground: 0 0% 98%;
+      --muted: 240 3.7% 15.9%;
+      --muted-foreground: 240 5% 64.9%;
+      --accent: 240 3.7% 15.9%;
+      --accent-foreground: 0 0% 98%;
+      --destructive: 0 62.8% 45%;
+      --border: 240 3.7% 15.9%;
+      --input: 240 3.7% 15.9%;
+      --ring: 240 4.9% 83.9%;
+      color-scheme: dark;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    width: 340px;
+    padding: 14px;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font: 13px/1.45 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .icon { width: 16px; height: 16px; flex: none; }
+
+  .header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .app-icon { width: 26px; height: 26px; border-radius: 7px; box-shadow: 0 1px 3px hsl(240 10% 3.9% / 0.12); }
+  .header .title { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+  .header .subtitle { margin-top: 1px; font-size: 11.5px; color: hsl(var(--muted-foreground)); }
+
+  .label { display: block; margin: 12px 0 6px; font-size: 12px; font-weight: 500; color: hsl(var(--foreground)); }
+
+  .input {
+    width: 100%;
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid hsl(var(--input));
+    border-radius: calc(var(--radius) - 2px);
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font: inherit;
+    box-shadow: 0 1px 2px 0 hsl(240 10% 3.9% / 0.04);
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .input::placeholder { color: hsl(var(--muted-foreground)); }
+  .input:focus-visible { border-color: hsl(var(--ring)); box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring) / 0.25); }
+
+  /* ---- shadcn-style select ---- */
+  .select-wrap { position: relative; }
+  .select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid hsl(var(--input));
+    border-radius: calc(var(--radius) - 2px);
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    box-shadow: 0 1px 2px 0 hsl(240 10% 3.9% / 0.04);
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .select-trigger:hover { border-color: hsl(var(--ring) / 0.4); }
+  .select-trigger[aria-expanded="true"] { border-color: hsl(var(--ring)); box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring) / 0.25); }
+  .select-trigger:focus-visible { outline: none; border-color: hsl(var(--ring)); box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring) / 0.25); }
+  .select-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .select-trigger .chevron { width: 15px; height: 15px; opacity: .5; transition: transform .15s; }
+  .select-trigger[aria-expanded="true"] .chevron { transform: rotate(180deg); }
+
+  .select-menu {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    max-height: 240px;
+    overflow: auto;
+    padding: 4px;
+    border: 1px solid hsl(var(--border));
+    border-radius: calc(var(--radius) - 2px);
+    background: hsl(var(--popover));
+    color: hsl(var(--popover-foreground));
+    box-shadow: 0 10px 30px -12px hsl(240 10% 3.9% / 0.35), 0 2px 6px -2px hsl(240 10% 3.9% / 0.12);
+    transform-origin: top;
+    animation: pop .12s ease-out;
+  }
+  .select-menu[hidden] { display: none; }
+  @keyframes pop {
+    from { opacity: 0; transform: translateY(-4px) scale(.98); }
+    to   { opacity: 1; transform: none; }
+  }
+  .select-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 6px 8px 6px 28px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .select-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .select-item[data-highlighted="true"], .select-item:hover { background: hsl(var(--accent)); color: hsl(var(--accent-foreground)); }
+  .select-item .check { position: absolute; left: 8px; width: 13px; height: 13px; opacity: 0; }
+  .select-item[aria-selected="true"] .check { opacity: 1; }
+
+  /* ---- buttons ---- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 12px;
+    border: 1px solid transparent;
+    border-radius: calc(var(--radius) - 2px);
+    background: none;
+    color: hsl(var(--foreground));
+    font: inherit;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color .15s, color .15s, box-shadow .15s;
+  }
+  .btn:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring) / 0.25); }
+  .btn:disabled { opacity: .5; pointer-events: none; }
+  .btn-primary { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); box-shadow: 0 1px 2px 0 hsl(240 10% 3.9% / 0.08); }
+  .btn-primary:hover { background: hsl(var(--primary) / 0.9); }
+  .btn-outline { border-color: hsl(var(--input)); background: hsl(var(--background)); box-shadow: 0 1px 2px 0 hsl(240 10% 3.9% / 0.04); }
+  .btn-outline:hover { background: hsl(var(--accent)); color: hsl(var(--accent-foreground)); }
+  .btn-ghost { background: transparent; }
+  .btn-ghost:hover { background: hsl(var(--accent)); color: hsl(var(--accent-foreground)); }
+  .btn-icon { width: 26px; height: 26px; padding: 0; }
+  .btn-icon .icon { width: 14px; height: 14px; }
+
+  /* ---- preset grid ---- */
   #presets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-  button, input, select { font: inherit; padding: 4px 6px; }
-  .row { display: flex; gap: 6px; } .row input { flex: 1; min-width: 0; }
-  #status { color: #c00; min-height: 1.2em; margin-top: 6px; }
-  li { display: flex; justify-content: space-between; gap: 6px; margin: 4px 0; }
-  li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  ul { padding: 0; list-style: none; }
+  #presets .btn { height: 30px; padding: 0 4px; font-size: 12px; }
+
+  .row { display: flex; gap: 6px; }
+  .row .input { flex: 1; min-width: 0; }
+  .row .btn { flex: none; }
+
+  .status { min-height: 16px; margin-top: 8px; font-size: 12px; color: hsl(var(--destructive)); }
+
+  /* ---- checkbox ---- */
+  .check { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 12.5px; cursor: pointer; }
+  .checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    border: 1px solid hsl(var(--input));
+    border-radius: 4px;
+    background: hsl(var(--background));
+    box-shadow: 0 1px 2px 0 hsl(240 10% 3.9% / 0.04);
+    cursor: pointer;
+    transition: background-color .15s, border-color .15s, box-shadow .15s;
+  }
+  .checkbox:checked {
+    border-color: hsl(var(--primary));
+    background-color: hsl(var(--primary));
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M20 6 9 17l-5-5'/></svg>");
+    background-size: 11px;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+  .checkbox:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring) / 0.25); }
+  @media (prefers-color-scheme: dark) {
+    .checkbox:checked {
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2318181b' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M20 6 9 17l-5-5'/></svg>");
+    }
+  }
+
+  /* ---- pending list ---- */
+  .list { list-style: none; margin: 0; padding: 0; max-height: 160px; overflow: auto; }
+  .list::-webkit-scrollbar, .select-menu::-webkit-scrollbar { width: 8px; }
+  .list::-webkit-scrollbar-thumb, .select-menu::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 8px; }
+  .list::-webkit-scrollbar-track, .select-menu::-webkit-scrollbar-track { background: transparent; }
+  .list li { display: flex; align-items: center; gap: 8px; padding: 7px 2px; border-bottom: 1px solid hsl(var(--border) / 0.7); }
+  .list li:last-child { border-bottom: 0; }
+  .item-info { flex: 1; min-width: 0; }
+  .item-time { font-size: 11px; color: hsl(var(--muted-foreground)); font-variant-numeric: tabular-nums; }
+  .item-title { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .empty { justify-content: center; padding: 10px 0; border-bottom: 0 !important; font-size: 12px; color: hsl(var(--muted-foreground)); }
 </style>
-<select id="scope" style="width:100%">
-  <option value="tab">This tab</option>
-  <option value="selected">Selected tabs (ctrl/shift-click)</option>
-  <option value="window">Entire window</option>
-</select>
-<label style="display:block;margin-top:6px"><input type="checkbox" id="close"> Close tab(s) after setting reminder</label>
-<select id="action" style="width:100%;margin-top:6px">
-  <option value="notify">When due: notify only (click to open)</option>
-  <option value="open">When due: reopen tab + notify</option>
-</select>
-<h4>Remind me in</h4>
-<div id="presets"></div>
-<h4>Or say when</h4>
-<div class="row"><input id="nl" placeholder="next monday at 9am"><button id="nlGo">Set</button></div>
-<h4>Or pick a time</h4>
-<div class="row"><input id="dt" type="datetime-local"><button id="dtGo">Set</button></div>
-<div id="status"></div>
-<h4>Pending</h4>
-<ul id="list"></ul>
-<script src="parse.js"></script>
-<script src="popup.js"></script>
+</head>
+<body>
+  <header class="header">
+    <img src="icons/icon48.png" alt="" class="app-icon">
+    <div>
+      <div class="title">Tab Reminder</div>
+      <div class="subtitle">Close tabs now, get them back later.</div>
+    </div>
+  </header>
+
+  <div class="select-wrap">
+    <select id="scope" hidden>
+      <option value="tab">This tab</option>
+      <option value="selected">Selected tabs</option>
+      <option value="window">Entire window</option>
+    </select>
+    <button type="button" class="select-trigger" aria-haspopup="listbox" aria-expanded="false">
+      <span class="select-value"></span>
+      <svg class="icon chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+    <div class="select-menu" role="listbox" hidden></div>
+  </div>
+
+  <label class="check"><input type="checkbox" id="close" class="checkbox"><span>Close tab(s) after setting reminder</span></label>
+
+  <div class="select-wrap" style="margin-top:8px">
+    <select id="action" hidden>
+      <option value="notify">Notify only (click to open)</option>
+      <option value="open">Reopen tab and notify</option>
+    </select>
+    <button type="button" class="select-trigger" aria-haspopup="listbox" aria-expanded="false">
+      <span class="select-value"></span>
+      <svg class="icon chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+    <div class="select-menu" role="listbox" hidden></div>
+  </div>
+
+  <div class="label">Remind me in</div>
+  <div id="presets"></div>
+
+  <label class="label" for="nl">Or say when</label>
+  <div class="row">
+    <input id="nl" class="input" placeholder="oct 20 at 9am" autocomplete="off" spellcheck="false">
+    <button id="nlGo" class="btn btn-primary" type="button">Set</button>
+  </div>
+
+  <label class="label" for="dt">Or pick a time</label>
+  <div class="row">
+    <input id="dt" class="input" type="datetime-local">
+    <button id="dtGo" class="btn btn-primary" type="button">Set</button>
+  </div>
+
+  <div id="status" class="status" role="status"></div>
+
+  <div class="label">Pending</div>
+  <ul id="list" class="list"></ul>
+
+  <script src="parse.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
