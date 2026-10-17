@@ -2,7 +2,7 @@ version: '3'
 
 vars:
   NAME: tab-reminder
-  DIST: artifacts
+  DIST: dist
   VERSION:
     sh: >-
       sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' manifest.json
