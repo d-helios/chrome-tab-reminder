@@ -7,6 +7,8 @@ vars:
     sh: >-
       sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' manifest.json
   FILES: manifest.json background.js popup.html popup.js parse.js icons
+  PASSAGE_KEY: local/chrome_dev/ca.pem
+  PASSAGE_PUBKEY: local/chrome_dev/ca-public_key.pem
 
 tasks:
   default:
@@ -40,51 +42,50 @@ tasks:
       - cp -R {{.FILES}} {{.DIST}}/pkg/
 
   crx:
-    desc: Build a signed CRX (required by Chrome Web Store verified uploads)
+    desc: Build a signed CRX (key from passage; required by verified uploads)
     deps: [stage]
     silent: true
     cmds:
       - |
         set -e
-        KEY="${CRX_KEY:-keys/tab-reminder.pem}"
-        case "$KEY" in /*) KEY_ABS="$KEY" ;; *) KEY_ABS="$PWD/$KEY" ;; esac
         CHROME="${CHROME_BIN:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
         [ -x "$CHROME" ] || CHROME="$(command -v google-chrome || command -v chromium || true)"
         [ -x "$CHROME" ] || { echo "Chrome not found. Set CHROME_BIN." >&2; exit 1; }
-        [ -f "$KEY_ABS" ] || { echo "Signing key not found: $KEY_ABS (set CRX_KEY, or run: task keygen)" >&2; exit 1; }
+
+        KEY_FILE=""
+        DELETE_KEY=""
+        if [ -n "${CRX_KEY:-}" ]; then
+          [ -f "$CRX_KEY" ] || { echo "Signing key not found: $CRX_KEY" >&2; exit 1; }
+          KEY_FILE="$CRX_KEY"
+        else
+          KEY_FILE="$(mktemp)"
+          DELETE_KEY=1
+          chmod 600 "$KEY_FILE"
+          passage show "{{.PASSAGE_KEY}}" > "$KEY_FILE" || { echo "Could not read {{.PASSAGE_KEY}} from passage" >&2; exit 1; }
+          grep -q 'PRIVATE KEY' "$KEY_FILE" || { echo "{{.PASSAGE_KEY}} is not a PEM private key" >&2; exit 1; }
+        fi
+
+        PROFILE="$(mktemp -d)"
+        cleanup() { rm -rf "$PROFILE"; [ -n "$DELETE_KEY" ] && rm -f "$KEY_FILE"; }
+        trap cleanup EXIT
 
         OUT="{{.DIST}}/{{.NAME}}-v{{.VERSION}}.crx"
-        PROFILE="$(mktemp -d)"
         rm -f "{{.DIST}}/pkg.crx" "$OUT"
-        "$CHROME" --user-data-dir="$PROFILE" --pack-extension="$PWD/{{.DIST}}/pkg" --pack-extension-key="$KEY_ABS"
-        rm -rf "$PROFILE"
+        "$CHROME" --user-data-dir="$PROFILE" --pack-extension="$PWD/{{.DIST}}/pkg" --pack-extension-key="$KEY_FILE"
         mv "{{.DIST}}/pkg.crx" "$OUT"
         echo "Built $OUT"
 
-  keygen:
-    desc: Generate a 2048-bit CRX signing key (never commit it)
+  pubkey:
+    desc: Print the public key registered under Verified CRX Uploads
     silent: true
     cmds:
       - |
         set -e
-        KEY="${CRX_KEY:-keys/tab-reminder.pem}"
-        if [ -f "$KEY" ]; then
-          echo "Key already exists: $KEY"
-          exit 0
+        if OUT="$(passage show "{{.PASSAGE_PUBKEY}}" 2>/dev/null)"; then
+          printf '%s\n' "$OUT"
+        else
+          passage show "{{.PASSAGE_KEY}}" | openssl pkey -pubout 2>/dev/null
         fi
-        mkdir -p "$(dirname "$KEY")"
-        openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$KEY"
-        chmod 600 "$KEY"
-        echo "Created $KEY"
-
-  pubkey:
-    desc: Print the public key to register under Verified CRX Uploads
-    silent: true
-    cmds:
-      - |
-        KEY="${CRX_KEY:-keys/tab-reminder.pem}"
-        [ -f "$KEY" ] || { echo "Signing key not found: $KEY" >&2; exit 1; }
-        openssl rsa -in "$KEY" -pubout 2>/dev/null
 
   clean:
     desc: Remove the dist folder

@@ -36,16 +36,12 @@ task crx     # dist/tab-reminder-v<version>.crx (signed)
 - `task crx` — signed CRX3, required for Chrome Web Store items opted into
   **Verified CRX uploads** (`You must update your item with a crx package`).
 
-The CRX is signed with `keys/tab-reminder.pem` (override with `CRX_KEY=/path/key.pem`).
-For verified uploads, the matching public key must be registered in the Developer
-Dashboard under **Package → Verified CRX Uploads**:
-
-```sh
-task keygen   # create keys/tab-reminder.pem (never commit it)
-task pubkey   # paste this output into the dashboard
-```
-
-Keep the private key safe — the Web Store only accepts updates signed by it.
+The CRX is signed with the private key stored in passage at
+`local/chrome_dev/ca.pem` (override with `CRX_KEY=/path/key.pem`). Passage may
+ask you to unlock it. `task pubkey` prints the matching public key
+(`local/chrome_dev/ca-public_key.pem`); it must match the public key registered
+in the Developer Dashboard under **Package → Verified CRX Uploads**, otherwise
+the store rejects the upload.
 
 ## Project layout
 
