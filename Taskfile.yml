@@ -16,7 +16,7 @@ tasks:
       - task --list
 
   build:
-    desc: Build the Chrome Web Store upload archive
+    desc: Build the zip archive (for stores that accept zips)
     run: once
     cmds:
       - mkdir -p {{.DIST}}
@@ -32,7 +32,61 @@ tasks:
       - unzip -Z1 {{.DIST}}/{{.NAME}}-v{{.VERSION}}.zip | grep -qx manifest.json
       - echo "Archive layout OK"
 
+  stage:
+    internal: true
+    cmds:
+      - rm -rf {{.DIST}}/pkg
+      - mkdir -p {{.DIST}}/pkg
+      - cp -R {{.FILES}} {{.DIST}}/pkg/
+
+  crx:
+    desc: Build a signed CRX (required by Chrome Web Store verified uploads)
+    deps: [stage]
+    silent: true
+    cmds:
+      - |
+        set -e
+        KEY="${CRX_KEY:-keys/tab-reminder.pem}"
+        case "$KEY" in /*) KEY_ABS="$KEY" ;; *) KEY_ABS="$PWD/$KEY" ;; esac
+        CHROME="${CHROME_BIN:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
+        [ -x "$CHROME" ] || CHROME="$(command -v google-chrome || command -v chromium || true)"
+        [ -x "$CHROME" ] || { echo "Chrome not found. Set CHROME_BIN." >&2; exit 1; }
+        [ -f "$KEY_ABS" ] || { echo "Signing key not found: $KEY_ABS (set CRX_KEY, or run: task keygen)" >&2; exit 1; }
+
+        OUT="{{.DIST}}/{{.NAME}}-v{{.VERSION}}.crx"
+        PROFILE="$(mktemp -d)"
+        rm -f "{{.DIST}}/pkg.crx" "$OUT"
+        "$CHROME" --user-data-dir="$PROFILE" --pack-extension="$PWD/{{.DIST}}/pkg" --pack-extension-key="$KEY_ABS"
+        rm -rf "$PROFILE"
+        mv "{{.DIST}}/pkg.crx" "$OUT"
+        echo "Built $OUT"
+
+  keygen:
+    desc: Generate a 2048-bit CRX signing key (never commit it)
+    silent: true
+    cmds:
+      - |
+        set -e
+        KEY="${CRX_KEY:-keys/tab-reminder.pem}"
+        if [ -f "$KEY" ]; then
+          echo "Key already exists: $KEY"
+          exit 0
+        fi
+        mkdir -p "$(dirname "$KEY")"
+        openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$KEY"
+        chmod 600 "$KEY"
+        echo "Created $KEY"
+
+  pubkey:
+    desc: Print the public key to register under Verified CRX Uploads
+    silent: true
+    cmds:
+      - |
+        KEY="${CRX_KEY:-keys/tab-reminder.pem}"
+        [ -f "$KEY" ] || { echo "Signing key not found: $KEY" >&2; exit 1; }
+        openssl rsa -in "$KEY" -pubout 2>/dev/null
+
   clean:
-    desc: Remove the artifacts folder
+    desc: Remove the dist folder
     cmds:
       - rm -rf {{.DIST}}

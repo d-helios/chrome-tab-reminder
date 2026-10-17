@@ -23,6 +23,30 @@ notification — at a time you choose.
 3. Click **Load unpacked** and select the root of this repository.
 4. Pin the extension and click its icon to open the popup.
 
+## Build
+
+Requires [Task](https://taskfile.dev/) and Google Chrome.
+
+```sh
+task build   # dist/tab-reminder-v<version>.zip
+task crx     # dist/tab-reminder-v<version>.crx (signed)
+```
+
+- `task build` — ZIP with `manifest.json` at the root, for stores that accept ZIP uploads.
+- `task crx` — signed CRX3, required for Chrome Web Store items opted into
+  **Verified CRX uploads** (`You must update your item with a crx package`).
+
+The CRX is signed with `keys/tab-reminder.pem` (override with `CRX_KEY=/path/key.pem`).
+For verified uploads, the matching public key must be registered in the Developer
+Dashboard under **Package → Verified CRX Uploads**:
+
+```sh
+task keygen   # create keys/tab-reminder.pem (never commit it)
+task pubkey   # paste this output into the dashboard
+```
+
+Keep the private key safe — the Web Store only accepts updates signed by it.
+
 ## Project layout
 
 ```
@@ -31,6 +55,7 @@ background.js      Service worker: alarms, storage, notifications
              popup.html / popup.js    Popup UI
 parse.js           Natural-language time parser
 icons/             Extension icons (16 / 48 / 128 px)
+Taskfile.yml       Build tasks (zip / signed CRX)
 PRIVACY_POLICY.md  Privacy policy
 ```
 

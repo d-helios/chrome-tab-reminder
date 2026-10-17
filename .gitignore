@@ -3,8 +3,13 @@
 
 # Build artifacts
 *.zip
+*.crx
 dist/
 build/
+
+# Signing keys (never commit)
+keys/
+*.pem
 
 # Editors
 .vscode/
