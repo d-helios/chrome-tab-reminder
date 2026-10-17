@@ -3,6 +3,7 @@
 
 # Build artifacts
 *.zip
+artifacts/
 dist/
 build/
 

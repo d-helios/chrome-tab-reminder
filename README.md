@@ -5,10 +5,12 @@ notification — at a time you choose.
 
 ## Features
 
-- **Presets** — snooze for 5m, 10m, 20m, 30m, 1h, 4h, 6h or 8h.
+- **Presets** — snooze for 5m, 10m, 15m, 30m, 1h, 4h, 8h or 24h.
 - **Natural language** — type things like `next monday at 9am`, `tomorrow at 8`,
-  `in 2 hours`, `noon`, or `eod`.
-- **Date/time picker** — pick an exact moment.
+  `in 2 hours`, `noon`, `eod`, or an exact date such as `oct 20 at 9am`,
+  `2026-10-20 14:30`, `20.10.2026 09:00` (`20/10` or `10/20` are read
+  day-first when ambiguous).
+- **Date/time picker** — pick an exact moment (prefilled with a valid future time).
 - **Scope** — this tab, the selected tabs, or the whole window.
 - **Optional close** — close the tab(s) right after the reminder is set.
 - **When due** — either just notify you (click to open) or reopen the tab

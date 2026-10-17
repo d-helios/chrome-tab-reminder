@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Tab Reminder",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Close tabs now, get them back (and a notification) at a time you choose.",
   "permissions": [
     "tabs",
